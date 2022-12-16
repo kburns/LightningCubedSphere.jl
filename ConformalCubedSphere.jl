@@ -61,7 +61,7 @@ function f_Runge(z, b)
     end
     return f
 end
-fᵣ
+#fᵣ
 
 "f_Newman(z, Pz, a) = sum_{j=1}^{na} sum_{k=0}^{3} im a_j (-1)^k / (z - im^k z_j)"
 function f_Newman(z, zP, a)
@@ -75,8 +75,25 @@ function f_Newman(z, zP, a)
     return f
 end
 
+"f_ReciprocalLog(z, Pz, a) = sum_{j=1}^{nl} sum_{k=0}^{3} a_j e^{i pi/4} i^k / (z - im^k z_j)"
+function f_ReciprocalLog(z, sP, a)
+    f = zero(z)
+    for (aj, sPj) in zip(a, sP)
+        for k = 0:3
+            fjk = @. aj * exp(im*pi/4) * (im)^k / (log(-(z/(im^k * zC) - 1)) - sPj) # added a negative in front of z so that the branches point away from the square
+            f += fjk
+        end
+    end
+    return f
+end
+
 "f(z) = f_Newman(z) + f_Runge(z)"
 f(z, Pz, a, b) = f_Newman(z, Pz, a) + f_Runge(z, b)
+
+"fl(z) = f_Newman(z) + f_Runge(z)"
+fLog(z, Ps, a, b) = f_ReciprocalLog(z, Ps, a) + f_Runge(z, b)
+
+Ps = LinRange(-10,0,na)
 
 # Parameters
 ns = 300  # number of boundary samples per side
@@ -106,15 +123,32 @@ Q = C * ((A*C) \ B)
 E = A * Q - B
 @printf "fitting error: %.2e \n" maximum(abs.(E))
 
+# Reciprocal log least squares fit: Re(fE) = 1
+Re_fq_Log(q) = real(fLog(zE, Ps, q[1:na], q[na+1:end]))
+ALog = ForwardDiff.jacobian(Re_fq_Log, zeros(na+nb))
+BLog = ones(ns)
+CLog = diagm([1/norm(ALog[:,j]) for j in axes(ALog, 2)])  # Normalize columns
+QLog = CLog * ((ALog*CLog) \ BLog)
+ELog = ALog * QLog - BLog
+@printf "log fitting error: %.2e \n" maximum(abs.(ELog))
+
 # Extract fitted parameters
 a = Q[1:na]
 b = Q[na+1:end]
+
+# Extract fitted parameters for reciprocal log
+aLog = QLog[1:na]
+bLog = QLog[na+1:end]
 
 # Resample and check error
 ns_rs = resample * ns
 zE_rs = vcat(sample_boundary_linear(ns_rs)...)
 fE_rs = f(zE_rs, zP, a, b)
+fE_rs_Log = fLog(zE_rs, Ps, aLog, bLog)
 EE = real(fE_rs) .- 1
+EELog = real(fE_rs_Log) .- 1
 @printf "resampled error: %.2e \n" maximum(abs.(EE))
-plot!(4 .+ extend_D4(fE_rs), seriestype=:scatter)
+@printf "log resampled error: %.2e \n" maximum(abs.(EELog))
 
+plot!(4 .+ extend_D4(fE_rs), seriestype=:scatter)
+plot!(8 .+ extend_D4(fE_rs_Log), seriestype=:scatter)
