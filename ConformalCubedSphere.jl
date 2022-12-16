@@ -80,7 +80,8 @@ function f_ReciprocalLog(z, sP, a)
     f = zero(z)
     for (aj, sPj) in zip(a, sP)
         for k = 0:3
-            fjk = @. aj * exp(im*pi/4) * (im)^k / (log(-(z/(im^k * zC) - 1)) - sPj) # added a negative in front of z so that the branches point away from the square
+            ang = angle((-1)^k * zC) # angle to rotate branch cut by
+            fjk = @. aj * exp(im*pi/4) * (im)^k / (log((z/(im^k * zC) - 1)*exp(-im*ang)) + im*ang - sPj)
             f += fjk
         end
     end
@@ -93,7 +94,7 @@ f(z, Pz, a, b) = f_Newman(z, Pz, a) + f_Runge(z, b)
 "fl(z) = f_Newman(z) + f_Runge(z)"
 fLog(z, Ps, a, b) = f_ReciprocalLog(z, Ps, a) + f_Runge(z, b)
 
-Ps = LinRange(-10,0,na)
+Ps = LinRange(-25,0,na)
 
 # Parameters
 ns = 300  # number of boundary samples per side
@@ -152,3 +153,8 @@ EELog = real(fE_rs_Log) .- 1
 
 plot!(4 .+ extend_D4(fE_rs), seriestype=:scatter)
 plot!(8 .+ extend_D4(fE_rs_Log), seriestype=:scatter)
+
+# p1 = [fLog(.2*exp(im*l),Ps, aLog, bLog) for l in LinRange(-pi,pi,102)]
+# p2 = [f(.2*exp(im*l),zP, a, b) for l in LinRange(-pi,pi,100)]
+# plot(p1.+im*eps(Float64))
+# plot!(p2.+im*eps(Float64))
