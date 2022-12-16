@@ -79,8 +79,7 @@ function f_ReciprocalLog(z, sP, a)
     f = zero(z)
     for (aj, sPj) in zip(a, sP)
         for k = 0:3
-            ang = angle((-1)^k * zC) # angle to rotate branch cut by
-            fjk = @. aj * exp(im*pi/4) * (im)^k / (log((z/(im^k * zC) - 1)*exp(-im*ang)) + im*ang - sPj)
+            fjk = @. aj * exp(im*pi/4) * (im)^k / (log(-(z/(im^k * zC) - 1)) + sPj)
             f += fjk
         end
     end
@@ -93,15 +92,15 @@ f(z, Pz, a, b) = f_Newman(z, Pz, a) + f_Runge(z, b)
 "fl(z) = f_Newman(z) + f_Runge(z)"
 fLog(z, Ps, a, b) = f_ReciprocalLog(z, Ps, a) + f_Runge(z, b)
 
-Ps = LinRange(-25,0,na)
-
 # Parameters
 ns = 300  # number of boundary samples per side
 na = 85  # number of poles per corner
-nb = 10  # number of polynomial terms
+nb = 20  # number of polynomial terms
 w = 17  # boundary sampling tanh width
 σ = 4  # pole compaction
 resample = 10  # resampling ratio for testing
+
+Ps = LinRange(-10,-1,na)
 
 # Compute and plot boundary samples
 zE = sample_boundary_tanh(ns, w)
@@ -152,11 +151,6 @@ EELog = real(fE_rs_Log) .- 1
 
 # plot!(4 .+ extend_D4(fE_rs), seriestype=:scatter)
 # plot!(8 .+ extend_D4(fE_rs_Log), seriestype=:scatter)
-
-# p1 = [fLog(.2*exp(im*l),Ps, aLog, bLog) for l in LinRange(-pi,pi,102)]
-# p2 = [f(.2*exp(im*l),zP, a, b) for l in LinRange(-pi,pi,100)]
-# plot(p1.+im*eps(Float64))
-# plot!(p2.+im*eps(Float64))
 
 x = range(-1, 1, length=20)'
 y = range(-1, 1, length=20)
