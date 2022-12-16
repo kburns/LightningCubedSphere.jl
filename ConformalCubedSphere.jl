@@ -61,7 +61,6 @@ function f_Runge(z, b)
     end
     return f
 end
-#fᵣ
 
 "f_Newman(z, Pz, a) = sum_{j=1}^{na} sum_{k=0}^{3} im a_j (-1)^k / (z - im^k z_j)"
 function f_Newman(z, zP, a)
@@ -151,10 +150,30 @@ EELog = real(fE_rs_Log) .- 1
 @printf "resampled error: %.2e \n" maximum(abs.(EE))
 @printf "log resampled error: %.2e \n" maximum(abs.(EELog))
 
-plot!(4 .+ extend_D4(fE_rs), seriestype=:scatter)
-plot!(8 .+ extend_D4(fE_rs_Log), seriestype=:scatter)
+# plot!(4 .+ extend_D4(fE_rs), seriestype=:scatter)
+# plot!(8 .+ extend_D4(fE_rs_Log), seriestype=:scatter)
 
 # p1 = [fLog(.2*exp(im*l),Ps, aLog, bLog) for l in LinRange(-pi,pi,102)]
 # p2 = [f(.2*exp(im*l),zP, a, b) for l in LinRange(-pi,pi,100)]
 # plot(p1.+im*eps(Float64))
 # plot!(p2.+im*eps(Float64))
+
+x = range(-1, 1, length=20)'
+y = range(-1, 1, length=20)
+z = SP(GP(x, y)...)
+plot!(legend=false)
+for i in axes(z, 1)
+    zi = z[i,:]
+    plot!(3im .+ zi, color="black")
+    plot!(3 .+ 3im .+ f(zi, zP, a, b), color="black")
+    plot!(6 .+ 3im .+ fLog(zi, Ps, aLog, bLog), color="black")
+end
+for i in axes(z, 2)
+    zi = z[:,i]
+    plot!(3im .+ zi, color="black")
+    plot!(3 .+ 3im .+ f(zi, zP, a, b), color="black")
+    plot!(6 .+ 3im .+ fLog(zi, Ps, aLog, bLog), color="black")
+end
+plot!()
+plot!(3 .+ extend_D4(fE_rs), seriestype=:scatter)
+plot!(6 .+ extend_D4(fE_rs_Log), seriestype=:scatter)
