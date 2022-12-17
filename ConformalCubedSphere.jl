@@ -78,11 +78,14 @@ end
 function f_ReciprocalLog(z, sP, a)
     f = zero(z)
     for (aj, sPj) in zip(a, sP)
-        for k = 0:3
-            fjk = @. aj * exp(im*pi/4) * (im)^k / (log(-(z/(im^k * zC) - 1)) + sPj)
-            f += fjk
-        end
-    end
+ for k = 0:3
+            # this step symmetrizes the branch cut
+             fjk = @. aj * exp(im*pi/4) * (im)^k / (log(-(z/((im)^k * zC) - 1)) + im*pi - sPj)
+             f += fjk
+             fjk = @. aj * exp(im*pi/4) * (im)^k / (log(-(z/((im)^k * zC) - 1)) - im*pi - sPj)
+             f += fjk
+         end
+  end
     return f
 end
 
@@ -100,7 +103,7 @@ w = 17  # boundary sampling tanh width
 σ = 4  # pole compaction
 resample = 10  # resampling ratio for testing
 
-Ps = LinRange(-10,-1,na)
+Ps = LinRange(-5,20,na)
 
 # Compute and plot boundary samples
 zE = sample_boundary_tanh(ns, w)
