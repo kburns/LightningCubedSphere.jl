@@ -134,7 +134,6 @@ function fit(f, b, q0)
     return q
 end
 
-
 # Parameters
 ns = 300  # number of boundary samples per side
 na = 85  # number of poles per corner
@@ -178,23 +177,51 @@ fLog_r = fLog(z_r, c, s, aLog, bLog)
 scatter!(3 .+ extend_D4(f_r), msw=0, ms=2)
 scatter!(6 .+ extend_D4(fLog_r), msw=0, ms=2)
 
+"Inverse lightning representation."
+fInv(z, p, a, b) = f_Newman(z, p./abs(c)*abs(1+im), a) + f_Runge(z, b)
+
+# Get real and imaginary parts of the Jacobian since ForwardDiff doesn't work for complex functions
+Z = f(z, p, a, b)
+Re_inv(q) = real(fInv(Z, p, q[1:na], q[na+1:end]))
+Im_inv(q) = imag(fInv(Z, p, q[1:na], q[na+1:end]))
+
+# Take Jacobian around initial parameters
+A_inv = ForwardDiff.jacobian(Re_inv, q) + im*ForwardDiff.jacobian(Im_inv, q) 
+# Compute column norms
+C_inv = diagm([1/norm(A_inv[:,j]) for j in axes(A_inv, 2)])
+# Fit
+RHS = z
+q_inv = C_inv * ((A_inv*C_inv) \ RHS)
+# Check error
+e = A_inv * q_inv - RHS
+@printf "fitting error: %.2e" maximum(abs.(e))
+println(" (inv_f)")
+a_inv = q_inv[1:na]
+b_inv = q_inv[na+1:end]
+
 # Plot grids
 cx = range(-1, 1, length=20)'
 cy = range(-1, 1, length=20)
 cz = cx .+ im*cy
-z = project(cx, cy)
-for i in axes(z, 1)
-    zi = z[i,:]
+zg = project(cx, cy)
+for i in axes(zg, 1)
+    zi = zg[i,:]
+    ci = cz[i,:]
     plot!(3im .+ cz[i,:], color="blue", alpha=0.25)
     plot!(3im .+ zi, color="black")
     plot!(3 .+ 3im .+ f(zi, p, a, b), color="black")
+    di = f(zi, p, a, b)
     plot!(6 .+ 3im .+ fLog(zi, c, s, aLog, bLog), color="black")
+    plot!(9 .+ 3im .+ fInv(di, p, a_inv, b_inv), color="black")
 end
-for i in axes(z, 2)
-    zi = z[:,i]
+for i in axes(zg, 2)
+    zi = zg[:,i]
+    ci = cz[:,i]
     plot!(3im .+ cz[:,i], color="blue", alpha=0.25)
     plot!(3im .+ zi, color="black")
     plot!(3 .+ 3im .+ f(zi, p, a, b), color="black")
+    di = f(zi, p, a, b)
     plot!(6 .+ 3im .+ fLog(zi, c, s, aLog, bLog), color="black")
+    plot!(9 .+ 3im .+ fInv(di, p, a_inv, b_inv), color="black")
 end
 plot!()
