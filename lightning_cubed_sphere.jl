@@ -70,10 +70,9 @@ function sample_edge_linear(n)
 end
 
 "Samples poles root-exponentially close to corners."
-function sample_poles(n, σ)
+function sample_poles(n, corner, σ)
     cluster = @. exp(-σ * (sqrt(n) - sqrt([1:n;])))
-    corner = project(1, 1)
-    poles = @. corner + cispi(1/4) * cluster
+    poles = @. corner * (1 + cluster)
     return poles
 end
 
@@ -136,7 +135,7 @@ end
 
 # Parameters
 ns = 300  # number of boundary samples per side
-na = 85  # number of poles per corner
+na = 80  # number of poles per corner
 nb = 10  # number of polynomial terms
 w = 17  # boundary sampling tanh width
 σ = 4  # pole compaction
@@ -147,12 +146,12 @@ z = sample_edge_tanh(ns, w)
 c = project(1, 1)
 @printf "epsilon edge: %.2e \n" minimum(abs.(z .- c))
 plot(legend=false, grid=false)
-scatter!(extend_D4(z), aspect_ratio=1, msw=0, ms=2)
+scatter!(extend_D4(z), aspect_ratio=1, msw=0, ms=1)
 
 # Compute and plot poles
-p = sample_poles(na, σ)
+p = sample_poles(na, c, σ)
 @printf "epsilon pole: %.2e \n" minimum(abs.(p .- c))
-scatter!(extend_C4(p), aspect_ratio=1, msw=0, ms=2)
+scatter!(extend_C4(p), aspect_ratio=1, msw=0, ms=1)
 
 # Least squares fit: Re(f(zE)) = 1
 Re_f(q) = real(f(z, p, q[1:na], q[na+1:end]))
@@ -161,6 +160,7 @@ println(" (f)")
 a = q[1:na]
 b = q[na+1:end]
 
+# Log least squares fit
 s = LinRange(-5,20,na)
 Re_fLog(q) = real(fLog(z, c, s, q[1:na], q[na+1:end]))
 qLog = fit(Re_fLog, ones(ns), zeros(na+nb))
@@ -168,60 +168,61 @@ println(" (fLog)")
 aLog = qLog[1:na]
 bLog = qLog[na+1:end]
 
+# Inverse least squares fit
+Z = f(z, p, a, b)
+pInv = sample_poles(na, 1+im, σ)
+Re_fInv(q) = real(f(Z, pInv, q[1:na], q[na+1:end]))
+Im_fInv(q) = imag(f(Z, pInv, q[1:na], q[na+1:end]))
+ReIm_fInv(q) = vcat(Re_fInv(q), Im_fInv(q))
+qInv = fit(ReIm_fInv, vcat(real(z), imag(z)), zeros(na+nb))
+println(" (fInv)")
+aInv = qInv[1:na]
+bInv = qInv[na+1:end]
+
 # Resample and check error
 z_r = vcat(sample_edge_linear(resample * ns)...)
 f_r = f(z_r, p, a, b)
 fLog_r = fLog(z_r, c, s, aLog, bLog)
+fInv_r = f(f_r, pInv, aInv, bInv)
 @printf "resampling error: %.2e (f)\n" maximum(abs.(real(f_r) .- 1))
 @printf "resampling error: %.2e (fLog)\n" maximum(abs.(real(fLog_r) .- 1))
-scatter!(3 .+ extend_D4(f_r), msw=0, ms=2)
-scatter!(6 .+ extend_D4(fLog_r), msw=0, ms=2)
-
-"Inverse lightning representation."
-fInv(z, p, a, b) = f_Newman(z, p./abs(c)*abs(1+im), a) + f_Runge(z, b)
-
-# Get real and imaginary parts of the Jacobian since ForwardDiff doesn't work for complex functions
-Z = f(z, p, a, b)
-Re_inv(q) = real(fInv(Z, p, q[1:na], q[na+1:end]))
-Im_inv(q) = imag(fInv(Z, p, q[1:na], q[na+1:end]))
-
-# Take Jacobian around initial parameters
-A_inv = ForwardDiff.jacobian(Re_inv, q) + im*ForwardDiff.jacobian(Im_inv, q) 
-# Compute column norms
-C_inv = diagm([1/norm(A_inv[:,j]) for j in axes(A_inv, 2)])
-# Fit
-RHS = z
-q_inv = C_inv * ((A_inv*C_inv) \ RHS)
-# Check error
-e = A_inv * q_inv - RHS
-@printf "fitting error: %.2e" maximum(abs.(e))
-println(" (inv_f)")
-a_inv = q_inv[1:na]
-b_inv = q_inv[na+1:end]
+@printf "resampling error: %.2e (fInv)\n" maximum(abs.(fInv_r - z_r))
+scatter!(3 .+ extend_D4(f_r), msw=0, ms=1)
+scatter!(6 .+ extend_D4(fInv_r), msw=0, ms=1)
 
 # Plot grids
-cx = range(-1, 1, length=20)'
-cy = range(-1, 1, length=20)
+cx = range(-1, 1, length=30)'
+cy = range(-1, 1, length=30)
 cz = cx .+ im*cy
 zg = project(cx, cy)
 for i in axes(zg, 1)
     zi = zg[i,:]
     ci = cz[i,:]
-    plot!(3im .+ cz[i,:], color="blue", alpha=0.25)
+    plot!(3im .+ ci, color="blue", alpha=0.25)
     plot!(3im .+ zi, color="black")
     plot!(3 .+ 3im .+ f(zi, p, a, b), color="black")
-    di = f(zi, p, a, b)
-    plot!(6 .+ 3im .+ fLog(zi, c, s, aLog, bLog), color="black")
-    plot!(9 .+ 3im .+ fInv(di, p, a_inv, b_inv), color="black")
+    plot!(6 .+ 3im .+ f(ci, pInv, aInv, bInv), color="black")
 end
 for i in axes(zg, 2)
     zi = zg[:,i]
     ci = cz[:,i]
-    plot!(3im .+ cz[:,i], color="blue", alpha=0.25)
+    plot!(3im .+ ci, color="blue", alpha=0.25)
     plot!(3im .+ zi, color="black")
     plot!(3 .+ 3im .+ f(zi, p, a, b), color="black")
-    di = f(zi, p, a, b)
-    plot!(6 .+ 3im .+ fLog(zi, c, s, aLog, bLog), color="black")
-    plot!(9 .+ 3im .+ fInv(di, p, a_inv, b_inv), color="black")
+    plot!(6 .+ 3im .+ f(ci, pInv, aInv, bInv), color="black")
 end
 plot!()
+
+
+using CubedSphere
+# Needed to convert Clima output to complex
+Base.complex(t::Tuple{T,T}) where T = complex(t[1],t[2])
+
+# Test on dense linear grid
+cx = range(0, 1, length=1000)'
+cy = range(0, 1, length=1000)
+X, Y, Z = GP(cx, cy)
+z = SP(X, Y, Z)
+fClima = complex.(CubedSphere.conformal_cubed_sphere_inverse_mapping.(X, Y, Z))
+@printf "Clima forward error: %.2e (f)\n" maximum(abs.(f(z, p, a, b) - fClima))
+
