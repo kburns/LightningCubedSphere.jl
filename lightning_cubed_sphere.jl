@@ -178,12 +178,7 @@ end
 # Resample and check error
 z_r = project(sample_edge_linear(resample * ns)...)
 f_r = lightning(z_r, p, a, b)
-fInv_r = lightning(f_r, pInv, aInv, bInv)
 @printf "resampling error: %.2e (f)\n" maximum(abs.(real(f_r) .- 1))
-if make_plots
-    scatter!(3 .+ extend_D4(f_r), msw=0, ms=1)
-    scatter!(6 .+ extend_D4(fInv_r), msw=0, ms=1)
-end
 if include_log
     fLog_r = log_lightning(z_r, c, s, aLog, bLog)
     @printf "resampling error: %.2e (fLog)\n" maximum(abs.(real(fLog_r) .- 1))
@@ -202,6 +197,12 @@ qInv = fit(ReIm_fInv, vcat(real(zz), imag(zz)), zeros(na+nb))
 println(" (fInv)")
 aInv = qInv[1:na]
 bInv = qInv[na+1:end]
+
+if make_plots
+    fInv_r = lightning(f_r, pInv, aInv, bInv)
+    scatter!(3 .+ extend_D4(f_r), msw=0, ms=1)
+    scatter!(6 .+ extend_D4(fInv_r), msw=0, ms=1)
+end
 
 # Plot grids
 if make_plots
@@ -233,7 +234,8 @@ rancic_z(X, Y, Z) = (Base.splat(complex) ∘ CubedSphere.conformal_cubed_sphere_
 rancic_s(z) = CubedSphere.conformal_cubed_sphere_mapping(real(z), imag(z))
 
 # Test on dense linear grid
-cx, cy = sample_edge_linear(resample * ns)
+cx = LinRange(0, 1, ns)'
+cy = LinRange(0, 1, ns)
 X, Y, Z = GP(cx, cy)
 z = SP(X, Y, Z)
 z_lightning = lightning(z, p, a, b)
