@@ -1,4 +1,3 @@
-
 using Printf
 using Plots
 using LinearAlgebra
@@ -123,7 +122,7 @@ function fit(f, b, q0)
     # Take Jacobian around initial parameters
     A = ForwardDiff.jacobian(f, q0)
     # Compute column norms
-    C = diagm([1/norm(A[:,j]) for j in axes(A, 2)])
+    C = diagm([1/norm(A[:, j]) for j in axes(A, 2)])
     # Fit
     q = C * ((A*C) \ b)
     # Check error
@@ -167,7 +166,7 @@ b = q[na+1:end]
 
 # Log least squares fit
 if include_log
-    s = LinRange(-5,20,na)
+    s = LinRange(-5, 20, na)
     Re_fLog(q) = real(log_lightning(z, c, s, q[1:na], q[na+1:end]))
     qLog = fit(Re_fLog, ones(ns), zeros(na+nb))
     println(" (fLog)")
@@ -211,16 +210,16 @@ if make_plots
     cz = cx .+ im*cy
     zg = project(cx, cy)
     for i in axes(zg, 1)
-        zi = zg[i,:]
-        ci = cz[i,:]
+        zi = zg[i, :]
+        ci = cz[i, :]
         plot!(3im .+ ci, color="blue", alpha=0.25)
         plot!(3im .+ zi, color="black")
         plot!(3 .+ 3im .+ lightning(zi, p, a, b), color="black")
         plot!(6 .+ 3im .+ lightning(ci, pInv, aInv, bInv), color="black")
     end
     for i in axes(zg, 2)
-        zi = zg[:,i]
-        ci = cz[:,i]
+        zi = zg[:, i]
+        ci = cz[:, i]
         plot!(3im .+ ci, color="blue", alpha=0.25)
         plot!(3im .+ zi, color="black")
         plot!(3 .+ 3im .+ lightning(zi, p, a, b), color="black")
@@ -242,7 +241,7 @@ z_lightning = lightning(z, p, a, b)
 z_rancic = rancic_z.(X, Y, Z)
 w_lightning = lightning(z_lightning, pInv, aInv, bInv)
 w_rancic = (Base.splat(SP) ∘ rancic_s).(z_rancic)
+
 @printf "lightning roundtrip error: %.2e\n" maximum(abs.(w_lightning - z))
 @printf "rancic roundtrip error: %.2e\n" maximum(abs.(w_rancic - z))
 @printf "lightning vs rancic forward error: %.2e\n" maximum(abs.(z_lightning - z_rancic))
-
