@@ -1,15 +1,20 @@
 using Printf
-using Plots
+using GLMakie
 using LinearAlgebra
 using ForwardDiff
 using CubedSphere
 
 """
+    gnomic_projection(cx, cy)
+
 Gnomic projection from northern face of circumscribed cube to northern spherical patch.
+
 Input: (cx, cy) in [-1, 1]^2
 Output: (sx, sy, sz) on S^2
 """
 function gnomic_projection(cx, cy)
+    (maximum(abs.(cx)) > 1 || maximum(abs.(cy)) > 1) && error("both cx and cy must be within [-1, 1]")
+
     cz = 1
     cr = @. sqrt(cx^2 + cy^2 + cz^2)
     sx = @. cx / cr
@@ -78,7 +83,7 @@ end
 function runge(z, b)
     f = zero(z)
     for (j, bj) in enumerate(b)
-        fj = @. bj * z^(1+4*(j-1))
+        fj = @. bj * z^(1 + 4*(j-1))
         f += fj
     end
     return f
@@ -132,29 +137,44 @@ function fit(f, b, q0)
 end
 
 # Parameters
-ns = 300  # number of boundary samples per side
-na = 80  # number of poles per corner
-nb = 10  # number of polynomial terms
-w = 17  # boundary sampling tanh width
-σ = 4  # pole compaction
+ns = 300       # number of boundary samples per side
+na = 80        # number of poles per corner
+nb = 10        # number of polynomial terms
+w = 17         # boundary sampling tanh width
+σ = 4          # pole compaction
 resample = 10  # resampling ratio for testing
-make_plots = false
+make_plots = true
 include_log = false
 
 # Edge samples
 z = project(sample_edge_tanh(ns, w)...)
 c = project(1, 1)
 @printf "epsilon edge: %.2e (f)\n" minimum(abs.(z .- c))
+
+reim(z) = real(z), imag(z)
+
 if make_plots
-    plot(legend=false, grid=false)
-    scatter!(extend_D4(z), aspect_ratio=1, msw=0, ms=1)
+    limits = ((-1.7, 1.7), (-1.7, 1.7))
+    fig = Figure()
+    ax11 = Axis(fig[1, 1]; aspect=1, limits)
+    ax12 = Axis(fig[1, 2]; aspect=1, limits)
+    ax13 = Axis(fig[1, 3]; aspect=1, limits)
+    ax21 = Axis(fig[2, 1]; aspect=1, limits)
+    ax22 = Axis(fig[2, 2]; aspect=1, limits)
+    ax23 = Axis(fig[2, 3]; aspect=1, limits)
+
+    for ax in [ax11, ax12, ax13, ax21, ax22, ax23]
+        hidedecorations!(ax)
+    end
+
+    scatter!(ax11, reim.(extend_D4(z)), markersize=5)
 end
 
 # Poles
 p = sample_poles(na, c, σ)
 @printf "epsilon pole: %.2e (f)\n" minimum(abs.(p .- c))
 if make_plots
-    scatter!(extend_C4(p), aspect_ratio=1, msw=0, ms=1)
+    scatter!(ax11, reim.(extend_C4(p)), markersize=5)
 end
 
 # Least squares fit: Re(f(zE)) = 1
@@ -199,8 +219,9 @@ bInv = qInv[na+1:end]
 
 if make_plots
     fInv_r = lightning(f_r, pInv, aInv, bInv)
-    scatter!(3 .+ extend_D4(f_r), msw=0, ms=1)
-    scatter!(6 .+ extend_D4(fInv_r), msw=0, ms=1)
+
+    scatter!(ax12, reim.(extend_D4(f_r)), markersize=5)
+    scatter!(ax13, reim.(extend_D4(fInv_r)), markersize=5)
 end
 
 # Plot grids
@@ -209,24 +230,33 @@ if make_plots
     cy = range(-1, 1, length=30)
     cz = cx .+ im*cy
     zg = project(cx, cy)
+
     for i in axes(zg, 1)
         zi = zg[i, :]
         ci = cz[i, :]
-        plot!(3im .+ ci, color="blue", alpha=0.25)
-        plot!(3im .+ zi, color="black")
-        plot!(3 .+ 3im .+ lightning(zi, p, a, b), color="black")
-        plot!(6 .+ 3im .+ lightning(ci, pInv, aInv, bInv), color="black")
+
+        lines!(ax21, reim.(ci), color=(:blue, 0.25))
+        lines!(ax21, reim.(zi), color=:black)
+
+        lines!(ax22, reim.(lightning(zi, p, a, b)), color=:black)
+        lines!(ax23, reim.(lightning(ci, pInv, aInv, bInv)), color=:black)
     end
+
     for i in axes(zg, 2)
         zi = zg[:, i]
         ci = cz[:, i]
-        plot!(3im .+ ci, color="blue", alpha=0.25)
-        plot!(3im .+ zi, color="black")
-        plot!(3 .+ 3im .+ lightning(zi, p, a, b), color="black")
-        plot!(6 .+ 3im .+ lightning(ci, pInv, aInv, bInv), color="black")
+
+        lines!(ax21, reim.(ci), color=(:blue, 0.25))
+        lines!(ax21, reim.(zi), color=:black)
+
+        lines!(ax22, reim.(lightning(zi, p, a, b)), color=:black)
+        lines!(ax23, reim.(lightning(ci, pInv, aInv, bInv)), color=:black)
     end
-    plot!()
+
+    display(fig)
+    save("figure.png", fig)
 end
+
 
 # Compare to clima's Rancic implementation
 rancic_z(X, Y, Z) = (Base.splat(complex) ∘ CubedSphere.conformal_cubed_sphere_inverse_mapping)(X, Y, Z)
