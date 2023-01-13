@@ -37,7 +37,7 @@ Input: (sx, sy, sz) on S^2
 Output: z in C
 """
 function stereographic_projection(sx, sy, sz)
-    z = @. 2 * (sx + 1im*sy) / (1 + sz)
+    z = @. 2 * (sx + im * sy) / (1 + sz)
     return z
 end
 SP = stereographic_projection
@@ -74,7 +74,7 @@ end
 
 "Samples poles root-exponentially close to corners."
 function sample_poles(n, corner, σ)
-    cluster = @. exp(-σ * (sqrt(n) - sqrt([1:n;])))
+    cluster = @. exp(-σ * (sqrt(n) - sqrt(1:n)))
     poles = @. corner * (1 + cluster)
     return poles
 end
@@ -154,14 +154,15 @@ c = project(1, 1)
 reim(z) = real(z), imag(z)
 
 if make_plots
-    limits = ((-1.7, 1.7), (-1.7, 1.7))
     fig = Figure()
-    ax11 = Axis(fig[1, 1]; aspect=1, limits)
-    ax12 = Axis(fig[1, 2]; aspect=1, limits)
-    ax13 = Axis(fig[1, 3]; aspect=1, limits)
-    ax21 = Axis(fig[2, 1]; aspect=1, limits)
-    ax22 = Axis(fig[2, 2]; aspect=1, limits)
-    ax23 = Axis(fig[2, 3]; aspect=1, limits)
+
+    kwargs = (aspect = 1, limits = ((-1.7, 1.7), (-1.7, 1.7)))
+    ax11 = Axis(fig[1, 1]; kwargs...)
+    ax12 = Axis(fig[1, 2]; kwargs...)
+    ax13 = Axis(fig[1, 3]; kwargs...)
+    ax21 = Axis(fig[2, 1]; kwargs...)
+    ax22 = Axis(fig[2, 2]; kwargs...)
+    ax23 = Axis(fig[2, 3]; kwargs...)
 
     for ax in [ax11, ax12, ax13, ax21, ax22, ax23]
         hidedecorations!(ax)
