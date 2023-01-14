@@ -113,6 +113,8 @@ A_series = Taylor1(A_MITgcm)
 B_series = inverse(A_series)
 B_MITgcm_computed = B_series.coeffs
 
+#=
 for k in 1:30
     @printf("k = %2i, B_MITgcm_table ≈ %+.14f, B_MITgcm_computed = %+.14f, |B_MITgcm_table - B_MITgcm_computed| = %.2e \n", k, B_MITgcm[k+1], B_MITgcm_computed[k+1], abs(B_MITgcm[k+1] - B_MITgcm_computed[k+1]))
 end
+=#

@@ -276,3 +276,34 @@ w_rancic = (Base.splat(SP) ∘ rancic_s).(z_rancic)
 @printf "lightning roundtrip error: %.2e\n" maximum(abs.(w_lightning - z))
 @printf "rancic roundtrip error: %.2e\n" maximum(abs.(w_rancic - z))
 @printf "lightning vs rancic forward error: %.2e\n" maximum(abs.(z_lightning - z_rancic))
+
+
+include("taylor_coefficients.jl")
+
+
+# Compare to Clima's Rancic-map implementation
+
+import CubedSphere: W_Rancic, Z_Rancic
+
+@info "Use Rancic's original coefficients"
+
+W_Rancic(Z; A_Rancic = A_Rancic) = sum(A_Rancic[k] * Z^(k-1) for k in length(A_Rancic):-1:1)
+Z_Rancic(W; B_Rancic = B_Rancic) = sum(B_Rancic[k] * W^(k-1) for k in length(B_Rancic):-1:1)
+
+include("compare_lightning_to_rancic_map.jl")
+
+
+@info "Use MITgcm coefficients as found in the interweb"
+
+W_Rancic(Z; A_Rancic = A_MITgcm) = sum(A_Rancic[k] * Z^(k-1) for k in length(A_Rancic):-1:1)
+Z_Rancic(W; B_Rancic = B_MITgcm) = sum(B_Rancic[k] * W^(k-1) for k in length(B_Rancic):-1:1)
+
+include("compare_lightning_to_rancic_map.jl")
+
+
+@info "Use MITgcm coefficients; A as found in the interweb, B computed \n"
+
+W_Rancic(Z; A_Rancic = A_MITgcm) = sum(A_Rancic[k] * Z^(k-1) for k in length(A_Rancic):-1:1)
+Z_Rancic(W; B_Rancic = B_MITgcm_computed) = sum(B_Rancic[k] * W^(k-1) for k in length(B_Rancic):-1:1)
+
+include("compare_lightning_to_rancic_map.jl")
