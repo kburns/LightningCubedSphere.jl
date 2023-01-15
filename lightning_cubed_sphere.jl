@@ -284,6 +284,7 @@ include("taylor_coefficients.jl")
 
 # Compare to Clima's Rancic-map implementation
 
+# import W_Rancic, Z_Rancic functions and redefine them using coefficients from taylor_coefficients.jl
 import CubedSphere: W_Rancic, Z_Rancic
 
 @info "Use Rancic's original coefficients"
