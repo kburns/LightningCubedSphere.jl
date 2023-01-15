@@ -1,5 +1,4 @@
 using Printf
-using GLMakie
 using LinearAlgebra
 using ForwardDiff
 using CubedSphere
@@ -143,7 +142,7 @@ nb = 10        # number of polynomial terms
 w = 17         # boundary sampling tanh width
 σ = 4          # pole compaction
 resample = 10  # resampling ratio for testing
-make_plots = true
+make_plots = false
 include_log = false
 
 # Edge samples
@@ -154,6 +153,8 @@ c = project(1, 1)
 reim(z) = real(z), imag(z)
 
 if make_plots
+    using GLMakie
+
     fig = Figure()
 
     kwargs = (aspect = 1, limits = ((-1.7, 1.7), (-1.7, 1.7)))
@@ -287,23 +288,27 @@ import CubedSphere: W_Rancic, Z_Rancic
 
 @info "Use Rancic's original coefficients"
 
-W_Rancic(Z; A_Rancic = A_Rancic) = sum(A_Rancic[k] * Z^(k-1) for k in length(A_Rancic):-1:1)
-Z_Rancic(W; B_Rancic = B_Rancic) = sum(B_Rancic[k] * W^(k-1) for k in length(B_Rancic):-1:1)
+W_Rancic(Z) = sum(A_Rancic[k] * Z^(k-1) for k in length(A_Rancic):-1:1)
+Z_Rancic(W) = sum(B_Rancic[k] * W^(k-1) for k in length(B_Rancic):-1:1)
 
 include("compare_lightning_to_rancic_map.jl")
 
 
 @info "Use MITgcm coefficients as found in the interweb"
 
-W_Rancic(Z; A_Rancic = A_MITgcm) = sum(A_Rancic[k] * Z^(k-1) for k in length(A_Rancic):-1:1)
-Z_Rancic(W; B_Rancic = B_MITgcm) = sum(B_Rancic[k] * W^(k-1) for k in length(B_Rancic):-1:1)
+A_Rancic = A_MITgcm
+B_Rancic = B_MITgcm
+W_Rancic(Z) = sum(A_Rancic[k] * Z^(k-1) for k in length(A_Rancic):-1:1)
+Z_Rancic(W) = sum(B_Rancic[k] * W^(k-1) for k in length(B_Rancic):-1:1)
 
 include("compare_lightning_to_rancic_map.jl")
 
 
-@info "Use MITgcm coefficients; A as found in the interweb, B computed \n"
+@info "Use MITgcm coefficients; A as found in the interweb, B computed"
 
-W_Rancic(Z; A_Rancic = A_MITgcm) = sum(A_Rancic[k] * Z^(k-1) for k in length(A_Rancic):-1:1)
-Z_Rancic(W; B_Rancic = B_MITgcm_computed) = sum(B_Rancic[k] * W^(k-1) for k in length(B_Rancic):-1:1)
+A_Rancic = A_MITgcm
+B_Rancic = B_MITgcm_computed
+W_Rancic(Z) = sum(A_Rancic[k] * Z^(k-1) for k in length(A_Rancic):-1:1)
+Z_Rancic(W) = sum(B_Rancic[k] * W^(k-1) for k in length(B_Rancic):-1:1)
 
 include("compare_lightning_to_rancic_map.jl")
