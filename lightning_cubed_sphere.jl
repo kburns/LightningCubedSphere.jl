@@ -169,14 +169,14 @@ if make_plots
         hidedecorations!(ax)
     end
 
-    scatter!(ax11, reim.(extend_D4(z)), markersize=5)
+    scatter!(ax11, reim.(extend_D4(z)), markersize=4)
 end
 
 # Poles
 p = sample_poles(na, c, σ)
 @printf "epsilon pole: %.2e (f)\n" minimum(abs.(p .- c))
 if make_plots
-    scatter!(ax11, reim.(extend_C4(p)), markersize=5)
+    scatter!(ax11, reim.(extend_C4(p)), markersize=4)
 end
 
 # Least squares fit: Re(f(zE)) = 1
@@ -222,8 +222,8 @@ bInv = qInv[na+1:end]
 if make_plots
     fInv_r = lightning(f_r, pInv, aInv, bInv)
 
-    scatter!(ax12, reim.(extend_D4(f_r)), markersize=5)
-    scatter!(ax13, reim.(extend_D4(fInv_r)), markersize=5)
+    scatter!(ax12, reim.(extend_D4(f_r)), markersize=4)
+    scatter!(ax13, reim.(extend_D4(fInv_r)), markersize=4)
 end
 
 # Plot grids
