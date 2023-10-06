@@ -37,6 +37,7 @@ function stereographic_projection(sx, sy, sz)
     return z
 end
 SP = stereographic_projection
+s_to_z = SP
 
 function inverse_stereographic_projection(z)
     throw("unimplemented")
@@ -44,9 +45,10 @@ function inverse_stereographic_projection(z)
     return (sx, sy, sz)
 end
 ISP = inverse_stereographic_projection
+z_to_s = ISP
 
 "Compose gnomic and stereographic projections."
-project(cx, cy) = SP(GP(cx, cy)...)
+c_to_z(cx, cy) = SP(GP(cx, cy)...)
 
 "Extend complex vector by 4-fold rotational symmetry."
 extend_C4(z) = vcat(z, im*z, -z, -im*z)
@@ -54,21 +56,21 @@ extend_C4(z) = vcat(z, im*z, -z, -im*z)
 "Extend complex vector by degree-4 dihedral symmetry."
 extend_D4(z) = extend_C4(vcat(z, reverse(im*conj(z))))
 
-"Sample half-edge exponentially close to corner on circumscribed cube."
+"Sample half-edge (x=1, 0<=y<=1) exponentially close to corner on circumscribed cube."
 function sample_edge_tanh(n, w)
     cx = ones(n)
     cy = tanh.(LinRange(0, w, n))
     return (cx, cy)
 end
 
-"Sample half-edge linearly on circumscribed cube."
+"Sample half-edge (x=1, 0<=y<=1) linearly on circumscribed cube."
 function sample_edge_linear(n)
     cx = ones(n)
     cy = LinRange(0, 1, n)
     return (cx, cy)
 end
 
-"Samples poles root-exponentially close to corners."
+"Samples poles root-exponentially close to a corner point in C."
 function sample_poles(n, corner, σ)
     cluster = @. exp(-σ * (sqrt(n) - sqrt([1:n;])))
     poles = @. corner * (1 + cluster)
@@ -97,26 +99,8 @@ function newman(z, p, a)
     return f
 end
 
-"reciprocal_log(z, c, s, a) = ..."
-function reciprocal_log(z, c, s, a)
-    f = zero(z)
-    for (aj, sj) in zip(a, s)
-        for k = 0:3
-            # this step symmetrizes the branch cut
-             fjk = @. im^k * cispi(1/4) * aj / (log(-(z/(im^k * c) - 1)) + im*pi - sj)
-             f += fjk
-             fjk = @. im^k * cispi(1/4) * aj / (log(-(z/(im^k * c) - 1)) - im*pi - sj)
-             f += fjk
-         end
-    end
-    return f
-end
-
 "Lightning representation."
 lightning(z, p, a, b) = newman(z, p, a) + runge(z, b)
-
-"Log-lightning representation."
-log_lightning(z, c, s, a, b) = reciprocal_log(z, c, s, a) + runge(z, b)
 
 """Least-squares fit via autodiff: f'(q0) * q = b"""
 function fit(f, b, q0)
@@ -139,110 +123,133 @@ nb = 10  # number of polynomial terms
 w = 17  # boundary sampling tanh width
 σ = 4  # pole compaction
 resample = 10  # resampling ratio for testing
-make_plots = false
-include_log = false
+make_plots = true
 
 # Edge samples
-z = project(sample_edge_tanh(ns, w)...)
-c = project(1, 1)
-@printf "epsilon edge: %.2e (f)\n" minimum(abs.(z .- c))
+c_edge = sample_edge_tanh(ns, w)
+c_corner = (1, 1)
+z_edge = c_to_z(c_edge...)
+z_corner = c_to_z(c_corner...)
+@printf "epsilon edge: %.2e (f)\n" minimum(abs.(z_edge .- z_corner))
 if make_plots
-    plot(legend=false, grid=false)
-    scatter!(extend_D4(z), aspect_ratio=1, msw=0, ms=1)
+    fig = plot(legend=false, grid=false)
+    scatter!(extend_D4(z_edge), aspect_ratio=1, msw=0, ms=1)
 end
 
 # Poles
-p = sample_poles(na, c, σ)
-@printf "epsilon pole: %.2e (f)\n" minimum(abs.(p .- c))
+z_poles = sample_poles(na, z_corner, σ)
+@printf "epsilon pole: %.2e (f)\n" minimum(abs.(z_poles .- z_corner))
 if make_plots
-    scatter!(extend_C4(p), aspect_ratio=1, msw=0, ms=1)
+    scatter!(extend_C4(z_poles), aspect_ratio=1, msw=0, ms=1)
 end
 
-# Least squares fit: Re(f(zE)) = 1
-Re_f(q) = real(lightning(z, p, q[1:na], q[na+1:end]))
-q = fit(Re_f, ones(ns), zeros(na+nb))
+# Forward map f: C(stereo) -> C(square)
+# Least squares fit: Re(f(z_edge)) = 1
+Re_f(q) = real(lightning(z_edge, z_poles, q[1:na], q[na+1:end]))
+f_q = fit(Re_f, ones(ns), zeros(na+nb))
 println(" (f)")
-a = q[1:na]
-b = q[na+1:end]
+f_a = f_q[1:na]
+f_b = f_q[na+1:end]
+forward(z) = lightning(z, z_poles, f_a, f_b)
 
-# Log least squares fit
-if include_log
-    s = LinRange(-5,20,na)
-    Re_fLog(q) = real(log_lightning(z, c, s, q[1:na], q[na+1:end]))
-    qLog = fit(Re_fLog, ones(ns), zeros(na+nb))
-    println(" (fLog)")
-    aLog = qLog[1:na]
-    bLog = qLog[na+1:end]
-end
+# Resample and check forward error
+c_edge_resample = sample_edge_linear(resample * ns)
+z_edge_resample = c_to_z(c_edge_resample...)
+y_edge_resample = forward(z_edge_resample)
+@printf "resampling error: %.2e (f)\n" maximum(abs.(real(y_edge_resample) .- 1))
 
-# Resample and check error
-z_r = project(sample_edge_linear(resample * ns)...)
-f_r = lightning(z_r, p, a, b)
-@printf "resampling error: %.2e (f)\n" maximum(abs.(real(f_r) .- 1))
-if include_log
-    fLog_r = log_lightning(z_r, c, s, aLog, bLog)
-    @printf "resampling error: %.2e (fLog)\n" maximum(abs.(real(fLog_r) .- 1))
-end
+# Inverse map g: C(square) -> C(stereo)
+# Least squares fit: g(y_edge) = z_edge
+y_edge = forward(z_edge)
+y_corner = 1 + im
+@printf "epsilon edge: %.2e (g)\n" minimum(abs.(y_edge .- y_corner))
+y_poles = sample_poles(na, y_corner, σ)
+@printf "epsilon pole: %.2e (g)\n" minimum(abs.(y_poles .- y_corner))
+Re_g(q) = real(lightning(y_edge, y_poles, q[1:na], q[na+1:end]))
+Im_g(q) = imag(lightning(y_edge, y_poles, q[1:na], q[na+1:end]))
+ReIm_g(q) = vcat(Re_g(q), Im_g(q))
+g_q = fit(ReIm_g, vcat(real(z_edge), imag(z_edge)), zeros(na+nb))
+println(" (g)")
+g_a = g_q[1:na]
+g_b = g_q[na+1:end]
+backward(y) = lightning(y, y_poles, g_a, g_b)
 
-# Inverse least squares fit
-zz = project(sample_edge_tanh(ns, w)...)
-Z = lightning(zz, p, a, b)
-@printf "epsilon edge: %.2e (fInv)\n" minimum(abs.(Z .- (1+im)))
-pInv = sample_poles(na, 1+im, σ)
-@printf "epsilon pole: %.2e (fInv)\n" minimum(abs.(pInv .- (1+im)))
-Re_fInv(q) = real(lightning(Z, pInv, q[1:na], q[na+1:end]))
-Im_fInv(q) = imag(lightning(Z, pInv, q[1:na], q[na+1:end]))
-ReIm_fInv(q) = vcat(Re_fInv(q), Im_fInv(q))
-qInv = fit(ReIm_fInv, vcat(real(zz), imag(zz)), zeros(na+nb))
-println(" (fInv)")
-aInv = qInv[1:na]
-bInv = qInv[na+1:end]
+# Check backward error
+@printf "resampling error: %.2e (g)\n" maximum(abs.(backward(y_edge_resample) - z_edge_resample))
 
 if make_plots
-    fInv_r = lightning(f_r, pInv, aInv, bInv)
-    scatter!(3 .+ extend_D4(f_r), msw=0, ms=1)
-    scatter!(6 .+ extend_D4(fInv_r), msw=0, ms=1)
+    scatter!(3 .+ extend_D4(y_edge), msw=0, ms=1)
+    scatter!(6 .+ extend_D4(backward(y_edge)), msw=0, ms=1)
 end
 
 # Plot grids
 if make_plots
-    cx = range(-1, 1, length=30)'
-    cy = range(-1, 1, length=30)
-    cz = cx .+ im*cy
-    zg = project(cx, cy)
-    for i in axes(zg, 1)
-        zi = zg[i,:]
-        ci = cz[i,:]
-        plot!(3im .+ ci, color="blue", alpha=0.25)
-        plot!(3im .+ zi, color="black")
-        plot!(3 .+ 3im .+ lightning(zi, p, a, b), color="black")
-        plot!(6 .+ 3im .+ lightning(ci, pInv, aInv, bInv), color="black")
+    cx_grid = range(-1, 1, length=20)'
+    cy_grid = range(-1, 1, length=20)
+    c_grid = cx_grid .+ im*cy_grid
+    z_grid = c_to_z(cx_grid, cy_grid)
+    y_grid = forward(z_grid)
+    zz_grid = backward(c_grid)
+
+    # high_zoom = 1000
+    # cx_high = range(-1/high_zoom, 1/high_zoom, length=100)'
+    # cy_high = range(-1/high_zoom, 1/high_zoom, length=100)
+    # cz_high = cx_high .+ im*cy_high
+
+    for i in axes(z_grid, 1)
+        plot!(0 .- 3im .+ c_grid[i,:], color="blue", alpha=0.25)
+        plot!(3 .- 3im .+ z_grid[i,:], color="black")
+        plot!(6 .- 3im .+ y_grid[i,:], color="black")
+        plot!(3 .- 6im .+ zz_grid[i,:], color="black")
+        plot!(6 .- 6im .+ c_grid[i,:], color="black")
     end
-    for i in axes(zg, 2)
-        zi = zg[:,i]
-        ci = cz[:,i]
-        plot!(3im .+ ci, color="blue", alpha=0.25)
-        plot!(3im .+ zi, color="black")
-        plot!(3 .+ 3im .+ lightning(zi, p, a, b), color="black")
-        plot!(6 .+ 3im .+ lightning(ci, pInv, aInv, bInv), color="black")
+    for i in axes(z_grid, 2)
+        plot!(0 .- 3im .+ c_grid[:,i], color="blue", alpha=0.25)
+        plot!(3 .- 3im .+ z_grid[:,i], color="black")
+        plot!(6 .- 3im .+ y_grid[:,i], color="black")
+        plot!(3 .- 6im .+ zz_grid[:,i], color="black")
+        plot!(6 .- 6im .+ c_grid[:,i], color="black")
     end
+    # for i in axes(cz_high, 1)
+    #     ci_high = cz_high[i,:]
+    #     plot!(10*(9 .+ 3im .+ high_zoom*lightning(ci_high, pInv, aInv, bInv)), color="black", linewidth=0.1)
+    # end
+    # for i in axes(cz_high, 2)
+    #     ci_high = cz_high[:,i]
+    #     plot!(10*(9 .+ 3im .+ high_zoom*lightning(ci_high, pInv, aInv, bInv)), color="black", linewidth=0.1)
+    # end
+    # SPI(X) = SP(X...)
+    # cz_high_rancic = SPI.(rancic_s.(cz_high))
+    # for i in axes(cz_high_rancic, 1)
+    #     ci_high = cz_high_rancic[i,:]
+    #     plot!(10*(9 .+ 3im .+ high_zoom*ci_high), color="red", linewidth=0.1)
+    # end
+    # for i in axes(cz_high_rancic, 2)
+    #     ci_high = cz_high_rancic[:,i]
+    #     plot!(10*(9 .+ 3im .+ high_zoom*ci_high), color="red", linewidth=0.1)
+    # end
     plot!()
 end
 
 # Compare to clima's Rancic implementation
-rancic_z(X, Y, Z) = (Base.splat(complex) ∘ CubedSphere.conformal_cubed_sphere_inverse_mapping)(X, Y, Z)
-rancic_s(z) = CubedSphere.conformal_cubed_sphere_mapping(real(z), imag(z))
+rancic_s_to_y(sx, sy, sz) = (Base.splat(complex) ∘ CubedSphere.conformal_cubed_sphere_inverse_mapping)(sx, sy, sz)
+rancic_y_to_s(y) = CubedSphere.conformal_cubed_sphere_mapping(real(y), imag(y))
+rancic_forward(z) = rancic_s_to_y.(z_to_s.(z))
+#rancic_backward(y) = s_to_z.(rancic_y_to_s.(y))
+rancic_backward(y) = (Base.splat(s_to_z) ∘ rancic_y_to_s).(y)
 
 # Test on dense linear grid
-cx = LinRange(0, 1, ns)'
-cy = LinRange(0, 1, ns)
-X, Y, Z = GP(cx, cy)
-z = SP(X, Y, Z)
-z_lightning = lightning(z, p, a, b)
-z_rancic = rancic_z.(X, Y, Z)
-w_lightning = lightning(z_lightning, pInv, aInv, bInv)
-w_rancic = (Base.splat(SP) ∘ rancic_s).(z_rancic)
-@printf "lightning roundtrip error: %.2e\n" maximum(abs.(w_lightning - z))
-@printf "rancic roundtrip error: %.2e\n" maximum(abs.(w_rancic - z))
-@printf "lightning vs rancic forward error: %.2e\n" maximum(abs.(z_lightning - z_rancic))
+cx_dense = LinRange(0, 1, ns)'
+cy_dense = LinRange(0, 1, ns)
+s_dense = GP(cx_dense, cy_dense)
+z_dense = s_to_z(s_dense...)
+y_dense = forward(z_dense)
+y_dense_rancic = rancic_s_to_y.(s_dense...)
+zz_dense = backward(y_dense)
+zz_dense_rancic = rancic_backward(y_dense_rancic)
+@printf "lightning roundtrip error: %.2e\n" maximum(abs.(zz_dense - z_dense))
+@printf "rancic roundtrip error: %.2e\n" maximum(abs.(zz_dense_rancic - z_dense))
+@printf "lightning vs rancic forward error: %.2e\n" maximum(abs.(y_dense - y_dense_rancic))
+
+display(fig)
 
