@@ -37,7 +37,7 @@ Input: (sx, sy, sz) ∈ 𝕊²
 Output: z ∈ ℂ
 """
 function stereographic_projection(sx, sy, sz)
-    z = @. 2 * (sx + 1im*sy) / (1 + sz)
+    z = @. 2 * (sx + im * sy) / (1 + sz)
     return z
 end
 SP = stereographic_projection
@@ -74,7 +74,7 @@ function sample_edge_linear(n)
     return (cx, cy)
 end
 
-"Samples poles root-exponentially close to a corner point in C."
+"Samples poles root-exponentially close to a corner point in ℂ."
 function sample_poles(n, corner, σ)
     cluster = @. exp(-σ * (sqrt(n) - sqrt(1:n)))
     poles = @. corner * (1 + cluster)
