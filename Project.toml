@@ -1,5 +1,7 @@
 [deps]
+CairoMakie = "13f3f980-e62b-5c42-98c6-ff1f3baf88f0"
 CubedSphere = "7445602f-e544-4518-8976-18f8e8ae6cdb"
+ExportAll = "ad2082ca-a69e-11e9-38fa-e96309a31fe4"
 ForwardDiff = "f6369f11-7733-5829-9624-2563aa707210"
 GLMakie = "e9467ef8-e4e7-5192-8a1a-b1aee30e663a"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
