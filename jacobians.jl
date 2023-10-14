@@ -23,4 +23,3 @@ J_f = d_f.(z_dense)
 J_g = d_g.(y_dense)
 JJ_f = norm.(J_f)
 JJ_g = norm.(J_g)
-

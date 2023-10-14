@@ -7,7 +7,7 @@ rancic_backward(y) = (Base.splat(s_to_z) ∘ rancic_y_to_s).(y)
 # Test on dense linear grid
 cx_dense = LinRange(0, 1, ns)'
 cy_dense = LinRange(0, 1, ns)
-s_dense = GP(cx_dense, cy_dense)
+s_dense = c_to_s(cx_dense, cy_dense)
 z_dense = s_to_z(s_dense...)
 y_dense = forward(z_dense)
 y_dense_rancic = rancic_s_to_y.(s_dense...)

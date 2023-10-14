@@ -1,5 +1,5 @@
-
 include("LightningMap.jl")
+
 using .LightningMap
 
 # Parameters
@@ -11,4 +11,3 @@ w = 17         # boundary sampling tanh width
 resample = 4   # resampling ratio for testing
 
 forward, backward = LightningMap.compute_lightning_maps(ns, na, nb, w, σ, resample);
-
