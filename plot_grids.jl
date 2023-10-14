@@ -47,8 +47,8 @@ function plot_map(w_grid, z_grid; filename=nothing, fig=nothing, ax=nothing, col
         # ax2 = Axis(fig[1, 2]; aspect=DataAspect())
         ax = (ax1, ax2)
     end
-    plot_gridlines!(ax[1], w_grid; color)
-    plot_gridlines!(ax[2], z_grid; color)
+    plot_gridlines!(w_grid; color, ax=ax[1])
+    plot_gridlines!(z_grid; color, ax=ax[2])
     if !isnothing(filename)
         save(filename, fig)
     end
@@ -65,7 +65,7 @@ w_grid = @. wx_grid + im * wy_grid
 
 
 # Plot quadrants
-R = 6371
+R = R_earth_km
 J = 0.8133665002897938
 
 function plot_z_quadrants!(L, N, backward, ax; box=false)
@@ -87,11 +87,11 @@ function plot_z_quadrants!(L, N, backward, ax; box=false)
     # Z_half_grid = R * z_half_grid
 
     # Plot grids
-    plot_gridlines(         z_grid; ax=ax, color=(:black,0.4))
-    plot_gridlines(    z_half_grid; ax=ax, color=(:purple,0.5))
-    plot_gridlines(-   z_half_grid; ax=ax, color=(:red,0.5))
-    plot_gridlines( im*z_half_grid; ax=ax, color=(:blue,0.5))
-    plot_gridlines(-im*z_half_grid; ax=ax, color=(:green,0.5))
+    plot_gridlines!(         z_grid; ax=ax, color=(:black,0.4))
+    plot_gridlines!(    z_half_grid; ax=ax, color=(:purple,0.5))
+    plot_gridlines!(-   z_half_grid; ax=ax, color=(:red,0.5))
+    plot_gridlines!( im*z_half_grid; ax=ax, color=(:blue,0.5))
+    plot_gridlines!(-im*z_half_grid; ax=ax, color=(:green,0.5))
 
     # # Add scale bar
     # dx = 2 * L / (N-1) * R * J
@@ -145,6 +145,3 @@ save("mitgcm_map_full.pdf", fig)
 # L = L_km / R / J
 # fig, ax = plot_quadrants(L, N)
 # save("mitgcm_map_zoom.pdf", fig)
-
-
-

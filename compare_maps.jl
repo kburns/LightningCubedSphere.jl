@@ -1,5 +1,6 @@
+using CubedSphere, Printf
 
-
+include("lightning_test.jl")
 include("taylor_coefficients.jl")
 
 
@@ -34,5 +35,3 @@ W_Rancic(Z) = sum(A_Rancic[k] * Z^(k-1) for k in length(A_Rancic):-1:1)
 Z_Rancic(W) = sum(B_Rancic[k] * W^(k-1) for k in length(B_Rancic):-1:1)
 
 include("compare_lightning_to_rancic_map.jl")
-
-

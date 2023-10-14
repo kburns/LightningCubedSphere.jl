@@ -30,4 +30,3 @@ if include_log
     fLog_r = log_lightning(z_r, c, s, aLog, bLog)
     @printf "resampling error: %.2e (fLog)\n" maximum(abs.(real(fLog_r) .- 1))
 end
-
