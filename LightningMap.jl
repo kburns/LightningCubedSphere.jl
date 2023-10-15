@@ -156,12 +156,11 @@ Input:
 - `ns`: number of boundary samples per side
 - `na`: number of poles per corner
 - `nb`: number of polynomial terms
-- `w`: boundary sampling tanh width
 - `σ`: pole compaction
 - `resample`: resampling ratio for testing
 - `make_plots`: whether to make plots
 """
-function compute_lightning_maps(ns, na, nb, w, σ, resample; make_plots=false)
+function compute_lightning_maps(ns, na, nb, σ, resample; make_plots=false)
 
     # Edge samples
     c_edge = sample_edge_rootexp(ns, σ/sqrt(ns/na))

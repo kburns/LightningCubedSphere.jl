@@ -105,16 +105,27 @@ B_MITgcm = [
     +0.00067885239089
 ]
 
+# Correct inverse of Rancic coeffs
 A_series = Taylor1(A_Rancic)
 B_series = inverse(A_series)
 B_Rancic = B_series.coeffs
 
+# Correct inverse of MITgcm coeffs
 A_series = Taylor1(A_MITgcm)
 B_series = inverse(A_series)
 B_MITgcm_computed = B_series.coeffs
 
-#=
-for k in 1:30
-    @printf("k = %2i, B_MITgcm_table ≈ %+.14f, B_MITgcm_computed = %+.14f, |B_MITgcm_table - B_MITgcm_computed| = %.2e \n", k, B_MITgcm[k+1], B_MITgcm_computed[k+1], abs(B_MITgcm[k+1] - B_MITgcm_computed[k+1]))
-end
-=#
+# Rancic and MITgcm maps
+W_Rancic(Z) = sum(A_Rancic[k] * Z^(k-1) for k in length(A_Rancic):-1:1)
+W_MITcgm(Z) = sum(A_MITcgm[k] * Z^(k-1) for k in length(A_MITcgm):-1:1)
+Z_Rancic(W) = sum(B_Rancic[k] * W^(k-1) for k in length(B_Rancic):-1:1)
+Z_MITcgm(W) = sum(B_MITcgm[k] * W^(k-1) for k in length(B_MITcgm):-1:1)
+Rancic_y_to_s(y) = conformal_cubed_sphere_mapping(real(y), imag(y); W_map=W_Rancic)
+MITgcm_y_to_s(y) = conformal_cubed_sphere_mapping(real(y), imag(y); W_map=W_MITcgm)
+Rancic_s_to_y(s) = conformal_cubed_sphere_inverse_mapping(s...; Z_map=Z_Rancic)
+MITgcm_s_to_y(s) = conformal_cubed_sphere_inverse_mapping(s...; Z_map=Z_MITcgm)
+Rancic_backward(y) = s_to_z(Rancic_y_to_s(y)...)
+MITgcm_backward(y) = s_to_z(MITgcm_y_to_s(y)...)
+Rancic_forward(z) = Rancic_s_to_y(z_to_s(z)...)
+MITgcm_forward(z) = MITgcm_s_to_y(z_to_s(z)...)
+
