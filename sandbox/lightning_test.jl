@@ -13,7 +13,7 @@ resample = 4   # resampling ratio for testing
 forward, backward = compute_lightning_maps(ns, na, nb, σ, resample);
 println()
 
-# Test on dense linear grid
+# Test vs Rancic on dense linear grid
 cx_dense = LinRange(0, 1, ns)'
 cy_dense = LinRange(0, 1, ns)
 s_dense = c_to_s(cx_dense, cy_dense)

@@ -118,13 +118,13 @@ B_MITgcm_computed = B_series.coeffs
 
 # Rancic and MITgcm maps
 W_Rancic(Z) = sum(A_Rancic[k] * Z^(k-1) for k in length(A_Rancic):-1:1)
-W_MITcgm(Z) = sum(A_MITcgm[k] * Z^(k-1) for k in length(A_MITcgm):-1:1)
+W_MITgcm(Z) = sum(A_MITgcm[k] * Z^(k-1) for k in length(A_MITgcm):-1:1)
 Z_Rancic(W) = sum(B_Rancic[k] * W^(k-1) for k in length(B_Rancic):-1:1)
-Z_MITcgm(W) = sum(B_MITcgm[k] * W^(k-1) for k in length(B_MITcgm):-1:1)
+Z_MITgcm(W) = sum(B_MITgcm[k] * W^(k-1) for k in length(B_MITgcm):-1:1)
 Rancic_y_to_s(y) = conformal_cubed_sphere_mapping(real(y), imag(y); W_map=W_Rancic)
-MITgcm_y_to_s(y) = conformal_cubed_sphere_mapping(real(y), imag(y); W_map=W_MITcgm)
+MITgcm_y_to_s(y) = conformal_cubed_sphere_mapping(real(y), imag(y); W_map=W_MITgcm)
 Rancic_s_to_y(sx, sy, sz) = conformal_cubed_sphere_inverse_mapping(sx, sy, sz; Z_map=Z_Rancic)
-MITgcm_s_to_y(sx, sy, sz) = conformal_cubed_sphere_inverse_mapping(sx, sy, sz; Z_map=Z_MITcgm)
+MITgcm_s_to_y(sx, sy, sz) = conformal_cubed_sphere_inverse_mapping(sx, sy, sz; Z_map=Z_MITgcm)
 Rancic_backward(y) = s_to_z(Rancic_y_to_s(y)...)
 MITgcm_backward(y) = s_to_z(MITgcm_y_to_s(y)...)
 reim_to_z(x, y) = x + im*y
