@@ -5,7 +5,7 @@ In the end, this is the same map as computed in [Rančić et al. (1996)](https:/
 
 Here we directly compute the conformal map with a face-centered stereographic projection using [lightning rational approximations](https://doi.org/10.1007/s40315-020-00325-w), which explicitly include terms with poles clustered near the corners.
 The map coefficients are computed simply by least squares.
-This much simpler algorithm still gives near machine precision, allowing for independent confirmation of the Rancic coefficients and providing a point of comparison for [discussions of their accuracy](https://github.com/CliMA/CubedSphere.jl/issues/15).
+This much simpler algorithm still gives near machine precision, allowing for independent confirmation of the Rančić coefficients and providing a point of comparison for [discussions of their accuracy](https://github.com/CliMA/CubedSphere.jl/issues/15).
 
 
 ## References
