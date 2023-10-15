@@ -1,10 +1,8 @@
-module LightningMap
 
-using ExportAll
+
 using Printf
 using LinearAlgebra
 using ForwardDiff
-using CubedSphere
 using CairoMakie
 
 
@@ -189,6 +187,7 @@ function compute_lightning_maps(ns, na, nb, σ, resample; make_plots=false)
     y_edge_resample = forward(z_edge_resample)
     @printf "resampling error: %.2e (f)\n" maximum(abs.(real(y_edge_resample) .- 1))
     @printf "corner error: %.2e (f)\n" abs.(forward(z_corner) - (1+im))
+    println()
 
     # Inverse map g: C(square) -> C(stereo)
     # Least squares fit: g(f(z_edge)) = z_edge
@@ -204,11 +203,12 @@ function compute_lightning_maps(ns, na, nb, σ, resample; make_plots=false)
     println(" (g0)")
     g_a = g_q[1:na]
     g_b = g_q[na+1:end]
-    backward(y) = lightning(y, y_poles, g_a, g_b)
+    backward0(y) = lightning(y, y_poles, g_a, g_b)
 
     # Check backward error
-    @printf "resampling error: %.2e (g0)\n" maximum(abs.(backward(y_edge_resample) - z_edge_resample))
-    @printf "corner error: %.2e (g0)\n" abs.(backward(1+im) - z_corner)
+    @printf "resampling error: %.2e (g0)\n" maximum(abs.(backward0(y_edge_resample) - z_edge_resample))
+    @printf "corner error: %.2e (g0)\n" abs.(backward0(1+im) - z_corner)
+    println()
 
     # Inverse map g: C(square) -> C(stereo)
     # Refine via Newton's method: z_to_c(g(y_edge))[1] = 1
@@ -254,6 +254,3 @@ function compute_lightning_maps(ns, na, nb, σ, resample; make_plots=false)
     return forward, backward
 end
 
-@exportAll()
-
-end # module

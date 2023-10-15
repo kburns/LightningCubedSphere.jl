@@ -1,4 +1,5 @@
 using TaylorSeries
+using CubedSphere
 
 # from Rancic et al. 1996 paper
 A_Rancic = [
@@ -122,10 +123,11 @@ Z_Rancic(W) = sum(B_Rancic[k] * W^(k-1) for k in length(B_Rancic):-1:1)
 Z_MITcgm(W) = sum(B_MITcgm[k] * W^(k-1) for k in length(B_MITcgm):-1:1)
 Rancic_y_to_s(y) = conformal_cubed_sphere_mapping(real(y), imag(y); W_map=W_Rancic)
 MITgcm_y_to_s(y) = conformal_cubed_sphere_mapping(real(y), imag(y); W_map=W_MITcgm)
-Rancic_s_to_y(s) = conformal_cubed_sphere_inverse_mapping(s...; Z_map=Z_Rancic)
-MITgcm_s_to_y(s) = conformal_cubed_sphere_inverse_mapping(s...; Z_map=Z_MITcgm)
+Rancic_s_to_y(sx, sy, sz) = conformal_cubed_sphere_inverse_mapping(sx, sy, sz; Z_map=Z_Rancic)
+MITgcm_s_to_y(sx, sy, sz) = conformal_cubed_sphere_inverse_mapping(sx, sy, sz; Z_map=Z_MITcgm)
 Rancic_backward(y) = s_to_z(Rancic_y_to_s(y)...)
 MITgcm_backward(y) = s_to_z(MITgcm_y_to_s(y)...)
-Rancic_forward(z) = Rancic_s_to_y(z_to_s(z)...)
-MITgcm_forward(z) = MITgcm_s_to_y(z_to_s(z)...)
+reim_to_z(x, y) = x + im*y
+Rancic_forward(z) = reim_to_z(Rancic_s_to_y(z_to_s(z)...)...)
+MITgcm_forward(z) = reim_to_z(MITgcm_s_to_y(z_to_s(z)...)...)
 

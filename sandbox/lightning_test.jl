@@ -1,11 +1,10 @@
 
 using Printf
-#using RancicMaps
-using .LightningMap
+using LightningCubedSphere
 
 
 # Parameters
-na = 60        # number of poles per corner
+na = 80        # number of poles per corner
 nb = 10        # number of polynomial terms
 ns = 300       # number of boundary samples per side
 σ = 4          # pole compaction (Gopal & Trefethen (SINUM 2019))
@@ -30,6 +29,6 @@ zz_Rancic = Rancic_backward.(w_Rancic)
 
 w_dense = cx_dense .+ im*cy_dense
 zz_dense = backward(w_dense)
-zz_Rancic = Rancic_backward.(w_Rancic)
+zz_Rancic = Rancic_backward.(w_dense)
 @printf "lightning vs Rancic backward error: %.2e\n" maximum(abs.(zz_dense - zz_Rancic))
 
