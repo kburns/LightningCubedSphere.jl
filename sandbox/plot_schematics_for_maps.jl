@@ -86,9 +86,11 @@ lines!(ax2, r*cos.(u), r*sin.(u), 0*u, linewidth=6, color=:black)
 # conformal_cubed_sphere_mapping
 u = range(0, stop=2π, length=N)
 v = range(0, stop=π,  length=N)
-x = @. cos(u') * sin(v)
-y = @. sin(u') * sin(v)
-z = @. 0*u' + cos(v)
+
+x = @. cos(u) * sin(v)'
+y = @. sin(u) * sin(v)'
+z = @. 0u .+ cos(v)'
+
 surface!(ax2, x , y, z; color=fill(RGBA(0.7, 0.7, 0.7, 0.8), N, N), shading=false)
 
 # Patch
