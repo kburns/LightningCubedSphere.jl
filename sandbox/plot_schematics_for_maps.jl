@@ -29,7 +29,7 @@ end
 ## Cube ##
 ##########
 
-# Invisible edges
+# Invisible edges, need transparency=false to appear behind
 kw = (color=RGBA(0, 0, 0, 1), linewidth=6, transparency=false)
 lines!(ax1, [-1, 1], [ 1,  1], [-1, -1]; kw...)
 lines!(ax1, [ 1,  1], [-1, 1], [-1, -1]; kw...)
@@ -56,7 +56,7 @@ scatter!(ax1, -1,  1, -1; kw...)
 scatter!(ax1,  1, -1, -1; kw...)
 scatter!(ax1, -1, -1, -1; kw...)
 
-# Visible edges
+# Visible edges, need transparency=true to reduce artifacts
 kw = (color=RGBA(0, 0, 0, 1), linewidth=6, transparency=true)
 lines!(ax1, [-1, 1], [ 1,  1], [ 1,  1]; kw...)
 lines!(ax1, [-1, 1], [-1, -1], [ 1,  1]; kw...)
@@ -76,13 +76,14 @@ scatter!(ax1, 0, 0, 1+0.05; markersize=20, color=:black)
 ## Sphere ##
 ############
 
+N = 201
+
 # Equator
 u = range(0, stop=2π, length=N)
 r = 1.01
 lines!(ax2, r*cos.(u), r*sin.(u), 0*u, linewidth=6, color=:black)
 
-# Sphere
-N = 201
+# conformal_cubed_sphere_mapping
 u = range(0, stop=2π, length=N)
 v = range(0, stop=π,  length=N)
 x = @. cos(u') * sin(v)
@@ -93,13 +94,13 @@ surface!(ax2, x , y, z; color=fill(RGBA(0.7, 0.7, 0.7, 0.8), N, N), shading=fals
 # Patch
 x = range(-1, 1, length=N)
 y = range(-1, 1, length=N)
-X = zx .+ 0*zy'
-Y = 0*zx .+ zy'
+X = x .+ 0*y'
+Y = 0*x .+ y'
 S = conformal_cubed_sphere_mapping.(X, Y)
-x = getindex.(S, 1)
-y = getindex.(S, 2)
-z = getindex.(S, 3)
-surface!(ax2, x, y, z.+1/N, color=0*sz, shading=false)
+sx = getindex.(S, 1)
+sy = getindex.(S, 2)
+sz = getindex.(S, 3)
+surface!(ax2, sx, sy, sz.+1/N, color=0*sz, shading=false)
 
 # North pole dot
 scatter!(ax2, 0, 0, 1+0.05, markersize=20, color=:black)
