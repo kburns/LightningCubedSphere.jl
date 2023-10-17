@@ -4,153 +4,132 @@ using GLMakie
 using Colors
 GLMakie.activate!()
 
+
+# Figure
 fig = Figure(resolution=(2900, 800))
 
-ax1 = Axis3(fig[1, 1], aspect = (1, 1, 1), limits = ((-1.3, 1.3), (-1.3, 1.3), (-1.3, 1.3)))
-ax2 = Axis3(fig[1, 2], aspect = (1, 1, 1), limits = ((-1.05, 1.05), (-1.05, 1.05), (-1.05, 1.05)))
-ax3 = Axis(fig[1, 3], aspect = 1, limits = ((-1, 1), (-1, 1)))
-ax4 = Axis(fig[1, 4], aspect = 1, limits = ((-1.5, 1.5), (-1.5, 1.5)))
+# Zoom
+s1 = 1.2
+s2 = 0.9
+s3 = 1.1
+s4 = 1.4
 
+# Axes
+ax1 = Axis3(fig[1, 1], aspect = (1, 1, 1), limits = ((-s1, s1), (-s1, s1), (-s1, s1)))
+ax2 = Axis3(fig[1, 2], aspect = (1, 1, 1), limits = ((-s2, s2), (-s2, s2), (-s2, s2)))
+ax3 = Axis(fig[1, 3], aspect = 1, limits = ((-s3, s3), (-s3, s3)))
+ax4 = Axis(fig[1, 4], aspect = 1, limits = ((-s4, s4), (-s4, s4)))
 for ax in [ax1, ax2, ax3, ax4]
     hidedecorations!(ax)
     hidespines!(ax)
 end
 
-# the conformal map domain
 
-N = 256
+##########
+## Cube ##
+##########
 
-x = range(-1, 1, length=N)
-y = range(-1, 1, length=N)
+# Invisible edges
+kw = (color=RGBA(0, 0, 0, 1), linewidth=6, transparency=false)
+lines!(ax1, [-1, 1], [ 1,  1], [-1, -1]; kw...)
+lines!(ax1, [ 1,  1], [-1, 1], [-1, -1]; kw...)
+lines!(ax1, [ 1,  1], [ 1,  1], [-1, 1]; kw...)
 
-X = zeros(length(x), length(y))
-Y = zeros(length(x), length(y))
-Z = zeros(length(x), length(y))
+# Faces
+kw = (color=fill(RGBA(0.7, 0.7, 0.7, 0.8), 2, 2), shading=false)
+u = [-1 -1;  1 1]
+v = [-1  1; -1 1]
+w = [ 1  1;  1 1]
+surface!(ax1, u, v, -w; kw...) # bottom
+surface!(ax1, -w, u', v'; kw...) # side
+surface!(ax1, v', -w, u'; kw...) # side
+surface!(ax1, u, v, w, color=0*w, shading=false) # top
 
-for (j, y′) in enumerate(y), (i, x′) in enumerate(x)
-    X[i, j], Y[i, j], Z[i, j] = conformal_cubed_sphere_mapping(x′, y′)
-end
+# Corner dots
+kw = (markersize=8, color=:black, transparency=true)
+scatter!(ax1,  1,  1,  1; kw...)
+scatter!(ax1, -1,  1,  1; kw...)
+scatter!(ax1,  1, -1,  1; kw...)
+scatter!(ax1, -1, -1,  1; kw...)
+scatter!(ax1,  1,  1, -1; kw...)
+scatter!(ax1, -1,  1, -1; kw...)
+scatter!(ax1,  1, -1, -1; kw...)
+scatter!(ax1, -1, -1, -1; kw...)
 
-surface!(ax2, X, Y, Z, color=0*Z, alpha=0.8, linewidth=4)
+# Visible edges
+kw = (color=RGBA(0, 0, 0, 1), linewidth=6, transparency=true)
+lines!(ax1, [-1, 1], [ 1,  1], [ 1,  1]; kw...)
+lines!(ax1, [-1, 1], [-1, -1], [ 1,  1]; kw...)
+lines!(ax1, [-1, 1], [-1, -1], [-1, -1]; kw...)
+lines!(ax1, [ 1,  1], [-1, 1], [ 1,  1]; kw...)
+lines!(ax1, [-1, -1], [-1, 1], [ 1,  1]; kw...)
+lines!(ax1, [-1, -1], [-1, 1], [-1, -1]; kw...)
+lines!(ax1, [-1, -1], [ 1,  1], [-1, 1]; kw...)
+lines!(ax1, [ 1,  1], [-1, -1], [-1, 1]; kw...)
+lines!(ax1, [-1, -1], [-1, -1], [-1, 1]; kw...)
 
-surface!(ax3, X, Y, 0*Z, shading = false)
+# North pole dot
+scatter!(ax1, 0, 0, 1+0.05; markersize=20, color=:black)
 
 
-# Equator on sphere
+############
+## Sphere ##
+############
 
-N = 256
-
-x = range(-1, 1, length=N)
-y = range(-1, 1, length=N)
-Zc = zeros(length(x), length(y))
-[Zc[i, j] = x[i]^2 + y[j]^2 for i in 1:length(x), j in 1:length(y)]
-
-contour!(ax2, x, y, Zc, levels=[1.00001], color=RGBA(0.1, 0.1, 0.1, 1), linewidth=6)
-
+# Equator
+u = range(0, stop=2π, length=N)
+r = 1.01
+lines!(ax2, r*cos.(u), r*sin.(u), 0*u, linewidth=6, color=:black)
 
 # Sphere
+N = 201
+u = range(0, stop=2π, length=N)
+v = range(0, stop=π,  length=N)
+x = @. cos(u') * sin(v)
+y = @. sin(u') * sin(v)
+z = @. 0*u' + cos(v)
+surface!(ax2, x , y, z; color=fill(RGBA(0.7, 0.7, 0.7, 0.8), N, N), shading=false)
 
-n = 101
-u = range(0, stop=2π, length=n)
-v = range(0, stop=π,  length=n)
+# Patch
+x = range(-1, 1, length=N)
+y = range(-1, 1, length=N)
+X = zx .+ 0*zy'
+Y = 0*zx .+ zy'
+S = conformal_cubed_sphere_mapping.(X, Y)
+x = getindex.(S, 1)
+y = getindex.(S, 2)
+z = getindex.(S, 3)
+surface!(ax2, x, y, z.+1/N, color=0*sz, shading=false)
 
-x = zeros(n, n)
-y = zeros(n, n)
-z = zeros(n, n)
-
-R = 1
-
-for i in 1:n
-    for j in 1:n
-        x[i, j] = R * cos(u[i]) * sin(v[j])
-        y[i, j] = R * sin(u[i]) * sin(v[j])
-        z[i, j] = R * cos(v[j])
-    end
-end
-
-surface!(ax2, x , y, z, color = fill(RGBA(0.7, 0.7, 0.7, 0.8), n, n), shading=false)
-
-
-# Domain on cube
-
-n = 101
-u = range(-1, 1, length=n)
-v = range(-1, 1,  length=n)
-
-X = zeros(length(u), length(v))
-Y = zeros(length(u), length(v))
-Z = zeros(length(u), length(v))
-
-for i in 1:n, j in 1:n
-    X[i, j], Y[i, j], Z[i, j] = (u[i], v[j], 1)
-end
-
-surface!(ax1, X, Y, Z, color=0*Z, alpha=0.8, linewidth=4, shading = true)
+# North pole dot
+scatter!(ax2, 0, 0, 1+0.05, markersize=20, color=:black)
 
 
-# Domain on panel (d)
+#############
+## w plane ##
+#############
 
-surface!(ax4, X, Y, 0*X .+ 1, shading = false)
+# Domain
+z = s_to_z(sx, sy, sz)
+surface!(ax3, real(z), imag(z), 0*sz, shading=false)
 
-
-# Cube's edges
-
-lines!(ax1, [-1, 1], [1, 1], [1, 1], color=RGBA(0.1, 0.1, 0.1, 1), linewidth=6)
-lines!(ax1, [-1, 1], [-1, -1], [1, 1], color=RGBA(0.1, 0.1, 0.1, 1), linewidth=6)
-lines!(ax1, [-1, 1], [1, 1], [-1, -1], color=RGBA(0.1, 0.1, 0.1, 1), linewidth=6)
-lines!(ax1, [-1, 1], [-1, -1], [-1, -1], color=RGBA(0.1, 0.1, 0.1, 1), linewidth=6)
-
-lines!(ax1, [1,   1], [-1, 1], [1, 1], color=RGBA(0.1, 0.1, 0.1, 1), linewidth=6)
-lines!(ax1, [-1, -1], [-1, 1], [1, 1], color=RGBA(0.1, 0.1, 0.1, 1), linewidth=6)
-lines!(ax1, [1,   1], [-1, 1], [-1, -1], color=RGBA(0.1, 0.1, 0.1, 1), linewidth=6)
-lines!(ax1, [-1, -1], [-1, 1], [-1, -1], color=RGBA(0.1, 0.1, 0.1, 1), linewidth=6)
-
-lines!(ax1, [1,   1], [ 1,  1], [-1, 1], color=RGBA(0.1, 0.1, 0.1, 1), linewidth=6)
-lines!(ax1, [-1, -1], [ 1,  1], [-1, 1], color=RGBA(0.1, 0.1, 0.1, 1), linewidth=6)
-lines!(ax1, [1,   1], [-1, -1], [-1, 1], color=RGBA(0.1, 0.1, 0.1, 1), linewidth=6)
-lines!(ax1, [-1, -1], [-1, -1], [-1, 1], color=RGBA(0.1, 0.1, 0.1, 1), linewidth=6)
-
-
-# Cube's faces
-
-shading = false
-color = fill(RGBA(0.7, 0.7, 0.7, 0.8), n, n)
-
-x = zeros(n, n)
-y = zeros(n, n)
-z = zeros(n, n)
-
-for i in 1:n, j in 1:n
-    x[i, j] = u[i]
-    y[i, j] = v[j]
-    z[i, j] = -1
-end
-surface!(ax1, x, y, z; color, shading)
-
-for i in 1:n, j in 1:n
-    x[i, j] = -1
-    y[i, j] = u[i]
-    z[i, j] = v[j]
-end
-surface!(ax1, x, y, z; color, shading)
-
-for i in 1:n, j in 1:n
-    x[i, j] = u[i]
-    y[i, j] = -1
-    z[i, j] = v[j]
-end
-surface!(ax1, x, y, z; color, shading)
-
-
-# North Pole dots
-
-scatter!(ax1, 0, 0, 1, markersize=20, color=:black)
-scatter!(ax2, 0, 0, 1, markersize=20, color=:black)
+# North pole dot
 scatter!(ax3, 0, 0, 1, markersize=20, color=:black)
-scatter!(ax4, 0, 0, 1, markersize=20, color=:black)
 
-colgap!(fig.layout, 1, Relative(0))
 
-fig
+#############
+## z plane ##
+#############
 
-save("maps_domains.png", fig)
+# Domain
+u = [-1 -1;  1 1]
+v = [-1  1; -1 1]
+surface!(ax4, u, v, 0*u, shading=false)
+
+# North pole dot
+scatter!(ax4, 0, 0, 0, markersize=20, color=:black)
+
+
+# Save
+save(joinpath(@__DIR__, "map_schematics.png"), fig)
+
